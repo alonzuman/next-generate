@@ -1,4 +1,4 @@
-# Nexjs Generate
+# Nextjs Generate
 
 A CLI tool for generating Next.js (app dir) components, pages, schemas and actions (CRUD operations) with [Zod](https://zod.dev/) schema validation.
 
