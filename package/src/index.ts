@@ -520,9 +520,10 @@ class NextGenerator {
     this.generateEditPage(this.modelName, modelDir);
     this.generateFormComponent(this.modelName, modelDir, this.fields);
 
+    // TODO improve the log to say what was created
     console.log(
       chalk.green(
-        `✨ Model ${chalk.bold(
+        `Model ${chalk.bold(
           capitalize(this.modelName)
         )} generated successfully at ${chalk.cyan(
           `/app/${pluralize(this.modelName.toLowerCase())}`
@@ -540,18 +541,15 @@ class NextGenerator {
 }
 
 try {
-  console.log(chalk.blue("🚀 Initializing generator..."));
+  console.log("Running next-generate...");
   const generator = new NextGenerator();
-  console.log(chalk.yellow("⚙️  Running generator..."));
   generator.run();
-  console.log(chalk.green("✅ Generator finished running"));
 } catch (error) {
   if (error instanceof Error) {
-    console.error(chalk.red(`❌ Error: ${error.message}`));
+    console.error(chalk.red(error.message));
   } else {
-    console.error(chalk.red("❌ An unknown error occurred"));
+    console.error(chalk.red("An unknown error occurred"));
   }
 }
 
-console.log(chalk.magenta("👋 Script finished"));
 process.exit(0);
