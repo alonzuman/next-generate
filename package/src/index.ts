@@ -2,8 +2,8 @@
 
 import fs from "fs";
 import path from "path";
+import { capitalize, pluralize, tokenizeSchema } from "./utils";
 import chalk from "chalk";
-import { capitalize, pluralize } from "./utils.js";
 
 type FieldType = "string" | "number" | "boolean" | "date" | "enum";
 
@@ -78,34 +78,7 @@ class NextGenerator {
     return { type, validations, options };
   }
 
-  private tokenizeSchema(schema: string): string[] {
-    const regex =
-      /z?\.(string|number|boolean|date|enum)(?:\((\[.*?\])\))?(?:\.([a-zA-Z]+(?:\([^)]*\))?))*/g;
-    const matches = schema.matchAll(regex);
-    const tokens: string[] = [];
-
-    for (const match of matches) {
-      tokens.push(match[1]); // type
-      if (match[3]) {
-        tokens.push(...match[3].split(".").filter(Boolean));
-      }
-      if (match[2]) {
-        const enumOptions = match[2]
-          .slice(1, -1) // Remove the surrounding square brackets
-          .split(",") // Split the string by commas
-          .map((opt) => opt.trim().replace(/^'|'$/g, "")); // Trim and remove surrounding single quotes
-
-        // @ts-ignore
-        tokens.push(enumOptions); // Add the parsed enum options to the tokens array
-      }
-    }
-
-    if (tokens.length === 0) {
-      throw new Error(`Invalid schema format: ${schema}`);
-    }
-
-    return tokens;
-  }
+  private tokenizeSchema = tokenizeSchema;
 
   private validateZodMethods(
     type: FieldType,

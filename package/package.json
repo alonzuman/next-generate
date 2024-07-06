@@ -4,7 +4,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "build": "tsup src/index.ts --minify --dts --format esm --out-dir dist"
   },
   "bin": {
@@ -14,6 +14,8 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/chalk": "^2.2.0",
+    "@types/jest": "^29.5.12",
     "@types/node": "^20.14.10",
     "tsup": "^8.1.0",
     "typescript": "^5.5.3"
