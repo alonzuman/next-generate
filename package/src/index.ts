@@ -5,12 +5,13 @@ import path from "path";
 import chalk from "chalk";
 import { capitalize, pluralize } from "./utils.js";
 
-type FieldType = "string" | "number" | "boolean" | "date";
+type FieldType = "string" | "number" | "boolean" | "date" | "enum";
 
 interface ModelField {
   name: string;
   type: FieldType;
   validations: string[];
+  options?: string[];
 }
 
 class NextGenerator {
@@ -37,8 +38,8 @@ class NextGenerator {
         throw new Error(`Invalid field format: ${def}`);
       }
 
-      const { type, validations } = this.parseSchema(schema);
-      return { name, type, validations };
+      const { type, validations, options } = this.parseSchema(schema);
+      return { name, type, validations, options };
     });
 
     const hasIdField = fields.some((field) => field.name === "id");
@@ -52,12 +53,19 @@ class NextGenerator {
   private parseSchema(schema: string): {
     type: FieldType;
     validations: string[];
+    options?: string[];
   } {
     const tokens = this.tokenizeSchema(schema);
     let type: FieldType;
     let validations: string[] = [];
+    let options: string[] | undefined = undefined;
 
-    if (tokens[0].startsWith("z.")) {
+    if (tokens[0] === "enum") {
+      type = "enum";
+      // @ts-ignore
+      options = tokens[tokens.length - 1] as string[]; // The last token contains the enum options
+      validations = tokens.slice(1, -1); // Exclude the type and options
+    } else if (tokens[0].startsWith("z.")) {
       type = tokens[0].slice(2) as FieldType;
       validations = tokens.slice(1);
     } else {
@@ -65,21 +73,30 @@ class NextGenerator {
       validations = tokens.slice(1);
     }
 
-    this.validateZodMethods(type, validations);
+    this.validateZodMethods(type, validations, options);
 
-    return { type, validations };
+    return { type, validations, options };
   }
 
   private tokenizeSchema(schema: string): string[] {
     const regex =
-      /z?\.(string|number|boolean|date)(?:\(\))?(?:\.([a-zA-Z]+(?:\([^)]*\))?))*/g;
+      /z?\.(string|number|boolean|date|enum)(?:\((\[.*?\])\))?(?:\.([a-zA-Z]+(?:\([^)]*\))?))*/g;
     const matches = schema.matchAll(regex);
     const tokens: string[] = [];
 
     for (const match of matches) {
       tokens.push(match[1]); // type
+      if (match[3]) {
+        tokens.push(...match[3].split(".").filter(Boolean));
+      }
       if (match[2]) {
-        tokens.push(...match[2].split(".").filter(Boolean));
+        const enumOptions = match[2]
+          .slice(1, -1) // Remove the surrounding square brackets
+          .split(",") // Split the string by commas
+          .map((opt) => opt.trim().replace(/^'|'$/g, "")); // Trim and remove surrounding single quotes
+
+        // @ts-ignore
+        tokens.push(enumOptions); // Add the parsed enum options to the tokens array
       }
     }
 
@@ -90,7 +107,11 @@ class NextGenerator {
     return tokens;
   }
 
-  private validateZodMethods(type: FieldType, methods: string[]): void {
+  private validateZodMethods(
+    type: FieldType,
+    methods: string[],
+    options?: string[]
+  ): void {
     const validMethods: Record<FieldType, string[]> = {
       string: [
         "min",
@@ -117,6 +138,7 @@ class NextGenerator {
       ],
       boolean: ["optional", "nullable"],
       date: ["min", "max", "optional", "nullable"],
+      enum: [], // Enums are defined by their options directly
     };
 
     for (const method of methods) {
@@ -126,6 +148,10 @@ class NextGenerator {
           `Invalid Zod method "${methodName}" for type "${type}"`
         );
       }
+    }
+
+    if (type === "enum" && !options) {
+      throw new Error(`Enum type must have options defined`);
     }
   }
 
@@ -146,6 +172,8 @@ class NextGenerator {
           return "checkbox";
         case "date":
           return "date";
+        case "enum":
+          return "select";
         default:
           return "text";
       }
@@ -161,21 +189,42 @@ class NextGenerator {
     );
 
     const formFields = filteredFields
-      .map(
-        (field) => `
-          <div>
-            <label htmlFor="${field.name}">${capitalize(field.name)}</label>
-            <input
-              type="${getInputType(field.type)}"
-              id="${field.name}"
-              name="${field.name}"
-              value={formData.${field.name} || ''}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-    `
-      )
+      .map((field) => {
+        if (field.type === "enum") {
+          const options = field.options || [];
+
+          return `
+        <div>
+          <label htmlFor="${field.name}">${capitalize(field.name)}</label>
+          <select
+            id="${field.name}"
+            name="${field.name}"
+            value={formData.${field.name} || ''}
+            onChange={handleInputChange}
+            required
+          >
+            ${options
+              .map((option) => `<option value="${option}">${option}</option>`)
+              .join("\n")}
+          </select>
+        </div>
+      `;
+        }
+
+        return `
+      <div>
+        <label htmlFor="${field.name}">${capitalize(field.name)}</label>
+        <input
+          type="${getInputType(field.type)}"
+          id="${field.name}"
+          name="${field.name}"
+          value={formData.${field.name} || ''}
+          onChange={handleInputChange}
+          required
+        />
+      </div>
+    `;
+      })
       .join("\n");
 
     const content = `"use client";
@@ -185,7 +234,6 @@ class NextGenerator {
     ${modelName}Schema,
     Update${modelName}InputSchema,
   } from "./schemas";
-  import { useRouter } from "next/navigation";
   
   interface ${modelName}FormProps {
     action: (
@@ -198,9 +246,8 @@ class NextGenerator {
     const [formData, setFormData] = useState<Partial<Update${modelName}InputSchema>>(
       defaultValues || {}
     );
-    const router = useRouter();
   
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const { name, value } = e.target;
       setFormData((prev) => ({ ...prev, [name]: value }));
     };
@@ -211,7 +258,7 @@ class NextGenerator {
         await action(formData as Update${modelName}InputSchema);
         // Handle successful submission (e.g., show a success message, redirect, etc.)
         // For example:
-        router.push(\`/${modelName.toLowerCase()}s\`);
+        // router.push(\`/${modelName.toLowerCase()}s\`);
       } catch (error) {
         // Handle error (e.g., show error message)
         console.error("Error submitting form:", error);
@@ -373,7 +420,12 @@ class NextGenerator {
       .map((field, index) => {
         const validations =
           field.validations.length > 0 ? `.${field.validations.join(".")}` : "";
-        const fieldDefinition = `${field.name}: z.${field.type}()${validations}`;
+        const fieldDefinition =
+          field.type === "enum"
+            ? `${field.name}: z.enum([${field.validations
+                .join(", ")
+                .replace(/z\.enum\(\[|\]\)/g, "")}])`
+            : `${field.name}: z.${field.type}()${validations}`;
         return index === 0 ? fieldDefinition : `    ${fieldDefinition}`;
       })
       .join(",\n");

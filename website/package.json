@@ -21,7 +21,6 @@
     "@types/react-dom": "^18",
     "eslint": "^8",
     "eslint-config-next": "14.2.4",
-    "nextjs-generate": "^0.0.1-alpha.6",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
