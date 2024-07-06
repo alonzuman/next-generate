@@ -47,3 +47,52 @@ export function pluralize(str: string) {
 
   return str + "s";
 }
+
+type Token = {
+  type: "string" | "number" | "boolean" | "date" | "enum" | "array" | "object";
+  validations: string[];
+  options?: string[]; // enum options
+};
+
+export function tokenizeSchema(schema: string): Token {
+  const token: Token = {
+    type: "string",
+    validations: [],
+  };
+
+  // Match the type
+  const typeMatch = schema.match(
+    /z\.(string|number|boolean|date|enum|array|object)/
+  );
+  if (typeMatch) {
+    token.type = typeMatch[1] as Token["type"];
+  } else {
+    throw new Error("Invalid schema format");
+  }
+
+  // Match the validations
+  const validationsMatch = schema.match(
+    /\.(min|max|email|url|length|regex|uuid|cuid|positive|negative|int)\(([^)]+)\)/g
+  );
+  if (validationsMatch) {
+    token.validations = validationsMatch.map((validation) => {
+      const methodMatch = validation.match(
+        /\.(min|max|email|url|length|regex|uuid|cuid|positive|negative|int)\(([^)]+)\)/
+      );
+      if (methodMatch) {
+        return `${methodMatch[1]}(${methodMatch[2]})`;
+      }
+      return "";
+    });
+  }
+
+  // Match the enum options
+  const optionsMatch = schema.match(/z\.enum\(\[(.*?)\]\)/);
+  if (optionsMatch) {
+    token.options = optionsMatch[1]
+      .split(",")
+      .map((opt) => opt.trim().replace(/^'|'$/g, ""));
+  }
+
+  return token;
+}

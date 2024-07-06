@@ -1,7 +1,6 @@
-import React from 'react'
+import React from "react";
+import { z } from "zod";
 
 export default function Page() {
-  return (
-    <div>Page</div>
-  )
+  return <div>Page</div>;
 }

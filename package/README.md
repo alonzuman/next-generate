@@ -52,6 +52,7 @@ npx next-generate <modelName> "<field1:type1() field2:type2() ...>"
 - [x] TypeScript support
 - [x] Server actions
 - [ ] Support zod enums
+- [ ] Apply validations on the form fields
 - [ ] Support optional parameters, in case someone doesn't want to generate schemas, pages, components and actions, but only parts of it.
 - [ ] Integration with popular form libraries (e.g., React Hook Form, Formik etc.) (?)
 - [ ] Integration with popular ORMs (e.g., Prisma, Drizzle, TypeORM etc.)

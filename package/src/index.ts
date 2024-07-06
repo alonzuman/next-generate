@@ -2,15 +2,16 @@
 
 import fs from "fs";
 import path from "path";
+import { capitalize, pluralize, tokenizeSchema } from "./utils";
 import chalk from "chalk";
-import { capitalize, pluralize } from "./utils.js";
 
-type FieldType = "string" | "number" | "boolean" | "date";
+type FieldType = "string" | "number" | "boolean" | "date" | "enum";
 
 interface ModelField {
   name: string;
   type: FieldType;
   validations: string[];
+  options?: string[];
 }
 
 class NextGenerator {
@@ -37,8 +38,8 @@ class NextGenerator {
         throw new Error(`Invalid field format: ${def}`);
       }
 
-      const { type, validations } = this.parseSchema(schema);
-      return { name, type, validations };
+      const { type, validations, options } = this.parseSchema(schema);
+      return { name, type, validations, options };
     });
 
     const hasIdField = fields.some((field) => field.name === "id");
@@ -52,45 +53,26 @@ class NextGenerator {
   private parseSchema(schema: string): {
     type: FieldType;
     validations: string[];
+    options?: string[];
   } {
-    const tokens = this.tokenizeSchema(schema);
-    let type: FieldType;
-    let validations: string[] = [];
+    const token = this.tokenizeSchema(schema);
 
-    if (tokens[0].startsWith("z.")) {
-      type = tokens[0].slice(2) as FieldType;
-      validations = tokens.slice(1);
-    } else {
-      type = tokens[0] as FieldType;
-      validations = tokens.slice(1);
-    }
+    const type = token.type as FieldType;
+    const validations = token.validations;
+    const options = token.options;
 
-    this.validateZodMethods(type, validations);
+    this.validateZodMethods(type, validations, options);
 
-    return { type, validations };
+    return { type, validations, options };
   }
 
-  private tokenizeSchema(schema: string): string[] {
-    const regex =
-      /z?\.(string|number|boolean|date)(?:\(\))?(?:\.([a-zA-Z]+(?:\([^)]*\))?))*/g;
-    const matches = schema.matchAll(regex);
-    const tokens: string[] = [];
+  private tokenizeSchema = tokenizeSchema;
 
-    for (const match of matches) {
-      tokens.push(match[1]); // type
-      if (match[2]) {
-        tokens.push(...match[2].split(".").filter(Boolean));
-      }
-    }
-
-    if (tokens.length === 0) {
-      throw new Error(`Invalid schema format: ${schema}`);
-    }
-
-    return tokens;
-  }
-
-  private validateZodMethods(type: FieldType, methods: string[]): void {
+  private validateZodMethods(
+    type: FieldType,
+    validations: string[],
+    options?: string[]
+  ): void {
     const validMethods: Record<FieldType, string[]> = {
       string: [
         "min",
@@ -117,15 +99,20 @@ class NextGenerator {
       ],
       boolean: ["optional", "nullable"],
       date: ["min", "max", "optional", "nullable"],
+      enum: ["optional", "nullable"], // Add valid methods for enum
     };
 
-    for (const method of methods) {
+    for (const method of validations) {
       const methodName = method.split("(")[0];
       if (!validMethods[type].includes(methodName)) {
         throw new Error(
           `Invalid Zod method "${methodName}" for type "${type}"`
         );
       }
+    }
+
+    if (type === "enum" && !options) {
+      throw new Error(`Enum type must have options.`);
     }
   }
 
@@ -146,6 +133,8 @@ class NextGenerator {
           return "checkbox";
         case "date":
           return "date";
+        case "enum":
+          return "select";
         default:
           return "text";
       }
@@ -161,21 +150,42 @@ class NextGenerator {
     );
 
     const formFields = filteredFields
-      .map(
-        (field) => `
-          <div>
-            <label htmlFor="${field.name}">${capitalize(field.name)}</label>
-            <input
-              type="${getInputType(field.type)}"
-              id="${field.name}"
-              name="${field.name}"
-              value={formData.${field.name} || ''}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-    `
-      )
+      .map((field) => {
+        if (field.type === "enum") {
+          const options = field.options || [];
+
+          return `
+        <div>
+          <label htmlFor="${field.name}">${capitalize(field.name)}</label>
+          <select
+            id="${field.name}"
+            name="${field.name}"
+            value={formData.${field.name} || ''}
+            onChange={handleInputChange}
+            required
+          >
+            ${options
+              .map((option) => `<option value="${option}">${option}</option>`)
+              .join("\n")}
+          </select>
+        </div>
+      `;
+        }
+
+        return `
+      <div>
+        <label htmlFor="${field.name}">${capitalize(field.name)}</label>
+        <input
+          type="${getInputType(field.type)}"
+          id="${field.name}"
+          name="${field.name}"
+          value={formData.${field.name} || ''}
+          onChange={handleInputChange}
+          required
+        />
+      </div>
+    `;
+      })
       .join("\n");
 
     const content = `"use client";
@@ -185,7 +195,6 @@ class NextGenerator {
     ${modelName}Schema,
     Update${modelName}InputSchema,
   } from "./schemas";
-  import { useRouter } from "next/navigation";
   
   interface ${modelName}FormProps {
     action: (
@@ -198,9 +207,8 @@ class NextGenerator {
     const [formData, setFormData] = useState<Partial<Update${modelName}InputSchema>>(
       defaultValues || {}
     );
-    const router = useRouter();
   
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const { name, value } = e.target;
       setFormData((prev) => ({ ...prev, [name]: value }));
     };
@@ -211,7 +219,7 @@ class NextGenerator {
         await action(formData as Update${modelName}InputSchema);
         // Handle successful submission (e.g., show a success message, redirect, etc.)
         // For example:
-        router.push(\`/${modelName.toLowerCase()}s\`);
+        // router.push(\`/${modelName.toLowerCase()}s\`);
       } catch (error) {
         // Handle error (e.g., show error message)
         console.error("Error submitting form:", error);
@@ -370,86 +378,92 @@ class NextGenerator {
   ) {
     const modelName = capitalize(_modelName);
     const schemaFields = fields
-      .map((field, index) => {
+      .map((field) => {
         const validations =
           field.validations.length > 0 ? `.${field.validations.join(".")}` : "";
-        const fieldDefinition = `${field.name}: z.${field.type}()${validations}`;
-        return index === 0 ? fieldDefinition : `    ${fieldDefinition}`;
+        const fieldDefinition =
+          field.type === "enum"
+            ? `${field.name}: z.enum([${(field.options ?? [])
+                .map((opt) => `"${opt}"`)
+                .join(", ")}])${validations}`
+            : `${field.name}: z.${field.type}()${validations}`;
+        return fieldDefinition;
       })
       .join(",\n");
 
     const content = `
-  import { z } from 'zod';
-  
-  export const ${modelName.toLowerCase()}Schema = z.object({
-    ${schemaFields}
-  });
-  export type ${modelName}Schema = z.infer<typeof ${modelName.toLowerCase()}Schema>;
-  
-  export const create${modelName}InputSchema = ${modelName.toLowerCase()}Schema.omit({ id: true });
-  export type Create${modelName}InputSchema = z.infer<typeof create${modelName}InputSchema>;
-  
-  export const update${modelName}InputSchema = ${modelName.toLowerCase()}Schema;
-  export type Update${modelName}InputSchema = z.infer<typeof update${modelName}InputSchema>;
-  
-  export const delete${modelName}InputSchema = z.object({ id: z.string() });
-  export type Delete${modelName}InputSchema = z.infer<typeof delete${modelName}InputSchema>;
-  `;
+import { z } from 'zod';
+
+export const ${modelName.toLowerCase()}Schema = z.object({
+  ${schemaFields}
+});
+export type ${modelName}Schema = z.infer<typeof ${modelName.toLowerCase()}Schema>;
+
+export const create${modelName}InputSchema = ${modelName.toLowerCase()}Schema.omit({ id: true });
+export type Create${modelName}InputSchema = z.infer<typeof create${modelName}InputSchema>;
+
+export const update${modelName}InputSchema = ${modelName.toLowerCase()}Schema;
+export type Update${modelName}InputSchema = z.infer<typeof update${modelName}InputSchema>;
+
+export const delete${modelName}InputSchema = z.object({ id: z.string() });
+export type Delete${modelName}InputSchema = z.infer<typeof delete${modelName}InputSchema>;
+    `;
 
     fs.writeFileSync(path.join(dir, "schemas.ts"), content);
   }
 
   private generateActions(_modelName: string, dir: string) {
     const modelName = capitalize(_modelName);
-    const content = `"use server";
+    const content = `
+"use server";
   
-  import {
-    Create${modelName}InputSchema,
-    Update${modelName}InputSchema,
-    Delete${modelName}InputSchema,
-    create${modelName}InputSchema,
-    update${modelName}InputSchema,
-    delete${modelName}InputSchema,
-    ${modelName}Schema,
-  } from "./schemas";
-  
-  export async function create${modelName}(
-    data: Create${modelName}InputSchema
-  ): Promise<${modelName}Schema> {
-    // TODO: Implement authentication and authorization logic
-    const validated = create${modelName}InputSchema.parse(data);
-    // TODO: Implement create logic
-    console.log("Creating ${modelName}:", validated);
-  }
-  
-  export async function get${modelName}(id: string): Promise<${modelName}Schema> {
-    // TODO: Implement authentication and authorization logic  
-    // TODO: Implement get logic
-    console.log("Getting ${modelName} with id:", id);
-  }
-  
-  export async function update${modelName}(
-    data: Update${modelName}InputSchema
-  ): Promise<${modelName}Schema | null> {
-    // TODO: Implement authentication and authorization logic
-    const validated = update${modelName}InputSchema.parse(data);
-    // TODO: Implement update logic
-    console.log("Updating ${modelName}:", validated);
-  }
-  
-  export async function delete${modelName}(data: Delete${modelName}InputSchema): Promise<void> {
-    // TODO: Implement authentication and authorization logic  
-    const validated = delete${modelName}InputSchema.parse(data);
-    // TODO: Implement delete logic
-    console.log("Deleting ${modelName} with id:", validated.id);
-  }
-  
-  export async function list${modelName}s(): Promise<${modelName}Schema[]> {
-    // TODO: Implement authentication and authorization logic  
-    // TODO: Implement list logic
-    console.log("Listing ${modelName}s");
-    return []
-  }
+import {
+  Create${modelName}InputSchema,
+  Update${modelName}InputSchema,
+  Delete${modelName}InputSchema,
+  create${modelName}InputSchema,
+  update${modelName}InputSchema,
+  delete${modelName}InputSchema,
+  ${modelName}Schema,
+} from "./schemas";
+
+export async function create${modelName}(
+  data: Create${modelName}InputSchema
+): Promise<${modelName}Schema> {
+  // TODO: Implement authentication and authorization logic
+  const validated = create${modelName}InputSchema.parse(data);
+  // TODO: Implement create logic
+  console.log("Creating ${modelName}:", validated);
+}
+
+export async function get${modelName}(id: string): Promise<${modelName}Schema> {
+  // TODO: Implement authentication and authorization logic  
+  // TODO: Implement get logic
+  console.log("Getting ${modelName} with id:", id);
+}
+
+export async function update${modelName}(
+  data: Update${modelName}InputSchema
+): Promise<${modelName}Schema | null> {
+  // TODO: Implement authentication and authorization logic
+  const validated = update${modelName}InputSchema.parse(data);
+  // TODO: Implement update logic
+  console.log("Updating ${modelName}:", validated);
+}
+
+export async function delete${modelName}(data: Delete${modelName}InputSchema): Promise<void> {
+  // TODO: Implement authentication and authorization logic  
+  const validated = delete${modelName}InputSchema.parse(data);
+  // TODO: Implement delete logic
+  console.log("Deleting ${modelName} with id:", validated.id);
+}
+
+export async function list${modelName}s(): Promise<${modelName}Schema[]> {
+  // TODO: Implement authentication and authorization logic  
+  // TODO: Implement list logic
+  console.log("Listing ${modelName}s");
+  return []
+}
   `;
 
     fs.writeFileSync(path.join(dir, "actions.ts"), content);

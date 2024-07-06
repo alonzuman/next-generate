@@ -1,14 +1,16 @@
 {
   "compilerOptions": {
-    "target": "es2020",
-    "module": "NodeNext",
-    "declaration": true,
-    "outDir": "./dist",
+    "target": "ES6",
+    "module": "commonjs",
+    "moduleResolution": "node", // Ensure this is set to 'node'
     "strict": true,
     "esModuleInterop": true,
-    "moduleResolution": "nodenext",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": ["node", "jest"], // Add "jest" here for Jest types
+    "resolveJsonModule": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "**/*.test.ts"]
+  "include": ["src/**/*", "tests"],
+  "types": ["node", "jest"],
+  "exclude": ["node_modules"]
 }
