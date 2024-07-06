@@ -96,10 +96,3 @@ export function tokenizeSchema(schema: string): Token {
 
   return token;
 }
-
-// Test cases
-console.log(tokenizeSchema("z.string().min(10).max(100)"));
-// Expected output: { type: "string", validations: ["min(10)", "max(100)"], options: undefined }
-
-console.log(tokenizeSchema("z.enum(['option1', 'option2', 'option3'])"));
-// Expected output: { type: "enum", validations: [], options: ["option1", "option2", "option3"] }

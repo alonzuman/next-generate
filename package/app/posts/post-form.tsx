@@ -65,18 +65,21 @@
       </div>
     
 
-      <div>
-        <label htmlFor="published">Published</label>
-        <input
-          type="checkbox"
-          id="published"
-          name="published"
-          value={formData.published || ''}
-          onChange={handleInputChange}
-          required
-        />
-      </div>
-    
+        <div>
+          <label htmlFor="visibility">Visibility</label>
+          <select
+            id="visibility"
+            name="visibility"
+            value={formData.visibility || ''}
+            onChange={handleInputChange}
+            required
+          >
+            <option value="public">public</option>
+<option value="sub">sub</option>
+<option value="none">none</option>
+          </select>
+        </div>
+      
         <button type="submit">Submit</button>
       </form>
     );

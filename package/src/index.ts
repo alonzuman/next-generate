@@ -55,23 +55,11 @@ class NextGenerator {
     validations: string[];
     options?: string[];
   } {
-    const tokens = this.tokenizeSchema(schema);
-    let type: FieldType;
-    let validations: string[] = [];
-    let options: string[] | undefined = undefined;
+    const token = this.tokenizeSchema(schema);
 
-    if (tokens[0] === "enum") {
-      type = "enum";
-      // @ts-ignore
-      options = tokens[tokens.length - 1] as string[]; // The last token contains the enum options
-      validations = tokens.slice(1, -1); // Exclude the type and options
-    } else if (tokens[0].startsWith("z.")) {
-      type = tokens[0].slice(2) as FieldType;
-      validations = tokens.slice(1);
-    } else {
-      type = tokens[0] as FieldType;
-      validations = tokens.slice(1);
-    }
+    const type = token.type as FieldType;
+    const validations = token.validations;
+    const options = token.options;
 
     this.validateZodMethods(type, validations, options);
 
@@ -82,7 +70,7 @@ class NextGenerator {
 
   private validateZodMethods(
     type: FieldType,
-    methods: string[],
+    validations: string[],
     options?: string[]
   ): void {
     const validMethods: Record<FieldType, string[]> = {
@@ -111,10 +99,10 @@ class NextGenerator {
       ],
       boolean: ["optional", "nullable"],
       date: ["min", "max", "optional", "nullable"],
-      enum: [], // Enums are defined by their options directly
+      enum: ["optional", "nullable"], // Add valid methods for enum
     };
 
-    for (const method of methods) {
+    for (const method of validations) {
       const methodName = method.split("(")[0];
       if (!validMethods[type].includes(methodName)) {
         throw new Error(
@@ -124,7 +112,7 @@ class NextGenerator {
     }
 
     if (type === "enum" && !options) {
-      throw new Error(`Enum type must have options defined`);
+      throw new Error(`Enum type must have options.`);
     }
   }
 
@@ -390,91 +378,92 @@ class NextGenerator {
   ) {
     const modelName = capitalize(_modelName);
     const schemaFields = fields
-      .map((field, index) => {
+      .map((field) => {
         const validations =
           field.validations.length > 0 ? `.${field.validations.join(".")}` : "";
         const fieldDefinition =
           field.type === "enum"
-            ? `${field.name}: z.enum([${field.validations
-                .join(", ")
-                .replace(/z\.enum\(\[|\]\)/g, "")}])`
+            ? `${field.name}: z.enum([${(field.options ?? [])
+                .map((opt) => `"${opt}"`)
+                .join(", ")}])${validations}`
             : `${field.name}: z.${field.type}()${validations}`;
-        return index === 0 ? fieldDefinition : `    ${fieldDefinition}`;
+        return fieldDefinition;
       })
       .join(",\n");
 
     const content = `
-  import { z } from 'zod';
-  
-  export const ${modelName.toLowerCase()}Schema = z.object({
-    ${schemaFields}
-  });
-  export type ${modelName}Schema = z.infer<typeof ${modelName.toLowerCase()}Schema>;
-  
-  export const create${modelName}InputSchema = ${modelName.toLowerCase()}Schema.omit({ id: true });
-  export type Create${modelName}InputSchema = z.infer<typeof create${modelName}InputSchema>;
-  
-  export const update${modelName}InputSchema = ${modelName.toLowerCase()}Schema;
-  export type Update${modelName}InputSchema = z.infer<typeof update${modelName}InputSchema>;
-  
-  export const delete${modelName}InputSchema = z.object({ id: z.string() });
-  export type Delete${modelName}InputSchema = z.infer<typeof delete${modelName}InputSchema>;
-  `;
+import { z } from 'zod';
+
+export const ${modelName.toLowerCase()}Schema = z.object({
+  ${schemaFields}
+});
+export type ${modelName}Schema = z.infer<typeof ${modelName.toLowerCase()}Schema>;
+
+export const create${modelName}InputSchema = ${modelName.toLowerCase()}Schema.omit({ id: true });
+export type Create${modelName}InputSchema = z.infer<typeof create${modelName}InputSchema>;
+
+export const update${modelName}InputSchema = ${modelName.toLowerCase()}Schema;
+export type Update${modelName}InputSchema = z.infer<typeof update${modelName}InputSchema>;
+
+export const delete${modelName}InputSchema = z.object({ id: z.string() });
+export type Delete${modelName}InputSchema = z.infer<typeof delete${modelName}InputSchema>;
+    `;
 
     fs.writeFileSync(path.join(dir, "schemas.ts"), content);
   }
 
   private generateActions(_modelName: string, dir: string) {
     const modelName = capitalize(_modelName);
-    const content = `"use server";
+    const content = `
+"use server";
   
-  import {
-    Create${modelName}InputSchema,
-    Update${modelName}InputSchema,
-    Delete${modelName}InputSchema,
-    create${modelName}InputSchema,
-    update${modelName}InputSchema,
-    delete${modelName}InputSchema,
-    ${modelName}Schema,
-  } from "./schemas";
-  
-  export async function create${modelName}(
-    data: Create${modelName}InputSchema
-  ): Promise<${modelName}Schema> {
-    // TODO: Implement authentication and authorization logic
-    const validated = create${modelName}InputSchema.parse(data);
-    // TODO: Implement create logic
-    console.log("Creating ${modelName}:", validated);
-  }
-  
-  export async function get${modelName}(id: string): Promise<${modelName}Schema> {
-    // TODO: Implement authentication and authorization logic  
-    // TODO: Implement get logic
-    console.log("Getting ${modelName} with id:", id);
-  }
-  
-  export async function update${modelName}(
-    data: Update${modelName}InputSchema
-  ): Promise<${modelName}Schema | null> {
-    // TODO: Implement authentication and authorization logic
-    const validated = update${modelName}InputSchema.parse(data);
-    // TODO: Implement update logic
-    console.log("Updating ${modelName}:", validated);
-  }
-  
-  export async function delete${modelName}(data: Delete${modelName}InputSchema): Promise<void> {
-    // TODO: Implement authentication and authorization logic  
-    const validated = delete${modelName}InputSchema.parse(data);
-    // TODO: Implement delete logic
-    console.log("Deleting ${modelName} with id:", validated.id);
-  }
-  
-  export async function list${modelName}s(): Promise<${modelName}Schema[]> {
-    // TODO: Implement authentication and authorization logic  
-    // TODO: Implement list logic
-    console.log("Listing ${modelName}s");
-    return []
-  }
+import {
+  Create${modelName}InputSchema,
+  Update${modelName}InputSchema,
+  Delete${modelName}InputSchema,
+  create${modelName}InputSchema,
+  update${modelName}InputSchema,
+  delete${modelName}InputSchema,
+  ${modelName}Schema,
+} from "./schemas";
+
+export async function create${modelName}(
+  data: Create${modelName}InputSchema
+): Promise<${modelName}Schema> {
+  // TODO: Implement authentication and authorization logic
+  const validated = create${modelName}InputSchema.parse(data);
+  // TODO: Implement create logic
+  console.log("Creating ${modelName}:", validated);
+}
+
+export async function get${modelName}(id: string): Promise<${modelName}Schema> {
+  // TODO: Implement authentication and authorization logic  
+  // TODO: Implement get logic
+  console.log("Getting ${modelName} with id:", id);
+}
+
+export async function update${modelName}(
+  data: Update${modelName}InputSchema
+): Promise<${modelName}Schema | null> {
+  // TODO: Implement authentication and authorization logic
+  const validated = update${modelName}InputSchema.parse(data);
+  // TODO: Implement update logic
+  console.log("Updating ${modelName}:", validated);
+}
+
+export async function delete${modelName}(data: Delete${modelName}InputSchema): Promise<void> {
+  // TODO: Implement authentication and authorization logic  
+  const validated = delete${modelName}InputSchema.parse(data);
+  // TODO: Implement delete logic
+  console.log("Deleting ${modelName} with id:", validated.id);
+}
+
+export async function list${modelName}s(): Promise<${modelName}Schema[]> {
+  // TODO: Implement authentication and authorization logic  
+  // TODO: Implement list logic
+  console.log("Listing ${modelName}s");
+  return []
+}
   `;
 
     fs.writeFileSync(path.join(dir, "actions.ts"), content);
