@@ -39,11 +39,11 @@ npx next-generate <modelName> "<field1:type1() field2:type2() ...>"
 
 ## Features
 
-- Generates Next.js pages for Create, Read, Update, and Delete operations
-- Creates Zod schemas for robust type checking and validation
-- Generates TypeScript types based on Zod schemas
-- Implements server actions for handling CRUD operations
-- Creates a reusable form component for the model
+- Generates Next.js pages for List, View, Create and Update model pages.
+- Implements server actions for handling CRUD operations.
+- Creates Zod schemas for robust type checking and validation.
+- Generates TypeScript types based on Zod schemas.
+- Creates a reusable form component for the model.
 
 ## Roadmap
 
