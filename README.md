@@ -1,6 +1,6 @@
 # next-generator
 
-A powerful CLI tool for generating Next.js components, pages, and CRUD operations with Zod schema validation.
+A CLI tool for generating Next.js (app dir) components, pages, schemas and actions (CRUD operations) with Zod schema validation.
 
 ## Installation
 
