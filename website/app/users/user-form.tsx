@@ -1,21 +1,21 @@
 "use client";
   import React, { useState } from "react";
   import {
-    CreatePostInputSchema,
-    PostSchema,
-    UpdatePostInputSchema,
+    CreateUserInputSchema,
+    UserSchema,
+    UpdateUserInputSchema,
   } from "./schemas";
   import { useRouter } from "next/navigation";
   
-  interface PostFormProps {
+  interface UserFormProps {
     action: (
-      data: CreatePostInputSchema | UpdatePostInputSchema
-    ) => Promise<PostSchema>;
-    defaultValues?: UpdatePostInputSchema;
+      data: CreateUserInputSchema | UpdateUserInputSchema
+    ) => Promise<UserSchema>;
+    defaultValues?: UpdateUserInputSchema;
   }
   
-  export function PostForm({ action, defaultValues }: PostFormProps) {
-    const [formData, setFormData] = useState<Partial<UpdatePostInputSchema>>(
+  export function UserForm({ action, defaultValues }: UserFormProps) {
+    const [formData, setFormData] = useState<Partial<UpdateUserInputSchema>>(
       defaultValues || {}
     );
     const router = useRouter();
@@ -28,10 +28,10 @@
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       try {
-        await action(formData as UpdatePostInputSchema);
+        await action(formData as UpdateUserInputSchema);
         // Handle successful submission (e.g., show a success message, redirect, etc.)
         // For example:
-        router.push(`/posts`);
+        router.push(`/users`);
       } catch (error) {
         // Handle error (e.g., show error message)
         console.error("Error submitting form:", error);
@@ -42,12 +42,12 @@
       <form onSubmit={handleSubmit}>
         
           <div>
-            <label htmlFor="title">Title</label>
+            <label htmlFor="image">Image</label>
             <input
               type="text"
-              id="title"
-              name="title"
-              value={formData.title || ''}
+              id="image"
+              name="image"
+              value={formData.image || ''}
               onChange={handleInputChange}
               required
             />
@@ -55,12 +55,12 @@
     
 
           <div>
-            <label htmlFor="content">Content</label>
+            <label htmlFor="name">Name</label>
             <input
               type="text"
-              id="content"
-              name="content"
-              value={formData.content || ''}
+              id="name"
+              name="name"
+              value={formData.name || ''}
               onChange={handleInputChange}
               required
             />
@@ -68,12 +68,25 @@
     
 
           <div>
-            <label htmlFor="published">Published</label>
+            <label htmlFor="email">Email</label>
             <input
-              type="checkbox"
-              id="published"
-              name="published"
-              value={formData.published || ''}
+              type="text"
+              id="email"
+              name="email"
+              value={formData.email || ''}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+    
+
+          <div>
+            <label htmlFor="age">Age</label>
+            <input
+              type="number"
+              id="age"
+              name="age"
+              value={formData.age || ''}
               onChange={handleInputChange}
               required
             />

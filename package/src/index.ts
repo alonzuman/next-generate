@@ -62,10 +62,6 @@ interface ModelField {
   validations: string[];
 }
 
-function tokenizeSchema(schema: string): string[] {
-  const regex = /([a-zA-Z]+(?:\.[a-zA-Z]+)*\([^)]*\))|([a-zA-Z]+)/g;
-  return schema.match(regex) || [];
-}
 class NextGenerator {
   private modelName = "";
   private fields: ModelField[] = [];
@@ -93,6 +89,11 @@ class NextGenerator {
       const { type, validations } = this.parseSchema(schema);
       return { name, type, validations };
     });
+
+    const hasIdField = fields.some((field) => field.name === "id");
+    if (!hasIdField) {
+      throw new Error('The schema must include an "id" field.');
+    }
 
     return fields;
   }

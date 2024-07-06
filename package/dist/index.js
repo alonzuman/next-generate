@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import i from"fs";import s from"path";import u from"chalk";function p(c){return c.charAt(0).toUpperCase()+c.slice(1)}function h(c){let a={person:"people",man:"men",woman:"women",child:"children",tooth:"teeth",foot:"feet",mouse:"mice",goose:"geese"};if(a[c.toLowerCase()])return a[c.toLowerCase()];let n=[{regex:/([^aeiou]ese)$/,replacement:"$1"},{regex:/(ax|test)is$/,replacement:"$1es"},{regex:/(alias|status)$/,replacement:"$1es"},{regex:/(bu)s$/,replacement:"$1ses"},{regex:/(buffal|tomat)o$/,replacement:"$1oes"},{regex:/([ti])um$/,replacement:"$1a"},{regex:/sis$/,replacement:"ses"},{regex:/(?:([^f])fe|([lr])f)$/,replacement:"$1$2ves"},{regex:/(hive)$/,replacement:"$1s"},{regex:/([^aeiouy]|qu)y$/,replacement:"$1ies"},{regex:/(x|ch|ss|sh)$/,replacement:"$1es"},{regex:/(matr|vert|ind)ix|ex$/,replacement:"$1ices"},{regex:/([m|l])ouse$/,replacement:"$1ice"},{regex:/^(ox)$/,replacement:"$1en"},{regex:/(quiz)$/,replacement:"$1zes"},{regex:/s$/,replacement:"s"},{regex:/$/,replacement:"s"}];for(let e=0;e<n.length;e++){let t=n[e];if(c.match(t.regex))return c.replace(t.regex,t.replacement)}return c+"s"}var $=class{constructor(){this.modelName="";this.fields=[]}parseArguments(){let a=process.argv.slice(2);if(a.length<2)throw new Error('Usage: npx next-generate <modelName> "<field1:type1() field2:type2() ...>"');return this.modelName=a[0],a[1].split(/(?<=\)) /).map(o=>{let[d,...l]=o.split(":"),m=l.join(":");if(!d||!m)throw new Error(`Invalid field format: ${o}`);let{type:r,validations:g}=this.parseSchema(m);return{name:d,type:r,validations:g}})}parseSchema(a){let n=this.tokenizeSchema(a),e,t=[];return n[0].startsWith("z.")?(e=n[0].slice(2),t=n.slice(1)):(e=n[0],t=n.slice(1)),this.validateZodMethods(e,t),{type:e,validations:t}}tokenizeSchema(a){let n=/z?\.(string|number|boolean|date)(?:\(\))?(?:\.([a-zA-Z]+(?:\([^)]*\))?))*/g,e=a.matchAll(n),t=[];for(let o of e)t.push(o[1]),o[2]&&t.push(...o[2].split(".").filter(Boolean));if(t.length===0)throw new Error(`Invalid schema format: ${a}`);return t}validateZodMethods(a,n){let e={string:["min","max","length","email","url","uuid","cuid","regex","optional","nullable"],number:["min","max","int","positive","negative","nonpositive","nonnegative","optional","nullable"],boolean:["optional","nullable"],date:["min","max","optional","nullable"]};for(let t of n){let o=t.split("(")[0];if(!e[a].includes(o))throw new Error(`Invalid Zod method "${o}" for type "${a}"`)}}generateFormComponent(a,n,e){let t=p(a);function o(r){switch(r){case"string":return"text";case"number":return"number";case"boolean":return"checkbox";case"date":return"date";default:return"text"}}let l=e.filter(r=>r.name!=="id"&&r.name!=="createdAt"&&r.name!=="updatedAt"&&r.name!=="deletedAt"&&!r.name.endsWith("Id")).map(r=>`
+import i from"fs";import s from"path";import u from"chalk";function d(c){return c.charAt(0).toUpperCase()+c.slice(1)}function h(c){let a={person:"people",man:"men",woman:"women",child:"children",tooth:"teeth",foot:"feet",mouse:"mice",goose:"geese"};if(a[c.toLowerCase()])return a[c.toLowerCase()];let n=[{regex:/([^aeiou]ese)$/,replacement:"$1"},{regex:/(ax|test)is$/,replacement:"$1es"},{regex:/(alias|status)$/,replacement:"$1es"},{regex:/(bu)s$/,replacement:"$1ses"},{regex:/(buffal|tomat)o$/,replacement:"$1oes"},{regex:/([ti])um$/,replacement:"$1a"},{regex:/sis$/,replacement:"ses"},{regex:/(?:([^f])fe|([lr])f)$/,replacement:"$1$2ves"},{regex:/(hive)$/,replacement:"$1s"},{regex:/([^aeiouy]|qu)y$/,replacement:"$1ies"},{regex:/(x|ch|ss|sh)$/,replacement:"$1es"},{regex:/(matr|vert|ind)ix|ex$/,replacement:"$1ices"},{regex:/([m|l])ouse$/,replacement:"$1ice"},{regex:/^(ox)$/,replacement:"$1en"},{regex:/(quiz)$/,replacement:"$1zes"},{regex:/s$/,replacement:"s"},{regex:/$/,replacement:"s"}];for(let e=0;e<n.length;e++){let t=n[e];if(c.match(t.regex))return c.replace(t.regex,t.replacement)}return c+"s"}var $=class{constructor(){this.modelName="";this.fields=[]}parseArguments(){let a=process.argv.slice(2);if(a.length<2)throw new Error('Usage: npx next-generate <modelName> "<field1:type1() field2:type2() ...>"');this.modelName=a[0];let t=a[1].split(/(?<=\)) /).map(m=>{let[l,...p]=m.split(":"),r=p.join(":");if(!l||!r)throw new Error(`Invalid field format: ${m}`);let{type:g,validations:f}=this.parseSchema(r);return{name:l,type:g,validations:f}});if(!t.some(m=>m.name==="id"))throw new Error('The schema must include an "id" field.');return t}parseSchema(a){let n=this.tokenizeSchema(a),e,t=[];return n[0].startsWith("z.")?(e=n[0].slice(2),t=n.slice(1)):(e=n[0],t=n.slice(1)),this.validateZodMethods(e,t),{type:e,validations:t}}tokenizeSchema(a){let n=/z?\.(string|number|boolean|date)(?:\(\))?(?:\.([a-zA-Z]+(?:\([^)]*\))?))*/g,e=a.matchAll(n),t=[];for(let o of e)t.push(o[1]),o[2]&&t.push(...o[2].split(".").filter(Boolean));if(t.length===0)throw new Error(`Invalid schema format: ${a}`);return t}validateZodMethods(a,n){let e={string:["min","max","length","email","url","uuid","cuid","regex","optional","nullable"],number:["min","max","int","positive","negative","nonpositive","nonnegative","optional","nullable"],boolean:["optional","nullable"],date:["min","max","optional","nullable"]};for(let t of n){let o=t.split("(")[0];if(!e[a].includes(o))throw new Error(`Invalid Zod method "${o}" for type "${a}"`)}}generateFormComponent(a,n,e){let t=d(a);function o(r){switch(r){case"string":return"text";case"number":return"number";case"boolean":return"checkbox";case"date":return"date";default:return"text"}}let l=e.filter(r=>r.name!=="id"&&r.name!=="createdAt"&&r.name!=="updatedAt"&&r.name!=="deletedAt"&&!r.name.endsWith("Id")).map(r=>`
           <div>
-            <label htmlFor="${r.name}">${p(r.name)}</label>
+            <label htmlFor="${r.name}">${d(r.name)}</label>
             <input
               type="${o(r.type)}"
               id="${r.name}"
@@ -12,7 +12,7 @@ import i from"fs";import s from"path";import u from"chalk";function p(c){return 
             />
           </div>
     `).join(`
-`),m=`"use client";
+`),p=`"use client";
   import React, { useState } from "react";
   import {
     Create${t}InputSchema,
@@ -59,7 +59,7 @@ import i from"fs";import s from"path";import u from"chalk";function p(c){return 
       </form>
     );
   }
-  `;i.writeFileSync(s.join(n,`${t.toLowerCase()}-form.tsx`),m)}generateListPage(a,n){let e=p(a),t=h(e),o=`import { list${t} } from './actions';
+  `;i.writeFileSync(s.join(n,`${t.toLowerCase()}-form.tsx`),p)}generateListPage(a,n){let e=d(a),t=h(e),o=`import { list${t} } from './actions';
   import Link from 'next/link';
   
   export default async function ${t}Page() {
@@ -83,13 +83,13 @@ import i from"fs";import s from"path";import u from"chalk";function p(c){return 
       </div>
     );
   }
-  `,d=s.join(s.dirname(n),t.toLowerCase());i.mkdirSync(d,{recursive:!0}),i.writeFileSync(s.join(d,"page.tsx"),o);let l=s.join(n,"actions.ts"),m=i.readFileSync(l,"utf8");m.includes(`list${t}`)||(m+=`
+  `,m=s.join(s.dirname(n),t.toLowerCase());i.mkdirSync(m,{recursive:!0}),i.writeFileSync(s.join(m,"page.tsx"),o);let l=s.join(n,"actions.ts"),p=i.readFileSync(l,"utf8");p.includes(`list${t}`)||(p+=`
   export async function list${t}() {
     // TODO: Implement fetching all ${t.toLowerCase()}
     console.log('Fetching all ${t.toLowerCase()}');
     return []; // Return an empty array for now
   }
-  `,i.writeFileSync(l,m))}generateNewPage(a,n){let e=p(a),t=`
+  `,i.writeFileSync(l,p))}generateNewPage(a,n){let e=d(a),t=`
   import { ${e}Form } from '../${e.toLowerCase()}-form';
   import { create${e} } from '../actions';
   
@@ -101,7 +101,7 @@ import i from"fs";import s from"path";import u from"chalk";function p(c){return 
       </div>
     );
   }
-  `,o=s.join(n,"new");i.mkdirSync(o,{recursive:!0}),i.writeFileSync(s.join(o,"page.tsx"),t)}generateEditPage(a,n){let e=p(a),t=`
+  `,o=s.join(n,"new");i.mkdirSync(o,{recursive:!0}),i.writeFileSync(s.join(o,"page.tsx"),t)}generateEditPage(a,n){let e=d(a),t=`
   import { ${e}Form } from '../../${e.toLowerCase()}-form';
   import { get${e}, update${e} } from '../../actions';
   import { notFound } from 'next/navigation';
@@ -120,7 +120,7 @@ import i from"fs";import s from"path";import u from"chalk";function p(c){return 
       </div>
     );
   }
-  `,o=s.join(n,"[id]","edit");i.mkdirSync(o,{recursive:!0}),i.writeFileSync(s.join(o,"page.tsx"),t)}generateViewPage(a,n){let e=p(a),t=`
+  `,o=s.join(n,"[id]","edit");i.mkdirSync(o,{recursive:!0}),i.writeFileSync(s.join(o,"page.tsx"),t)}generateViewPage(a,n){let e=d(a),t=`
   import { get${e} } from '../actions';
   import { notFound } from 'next/navigation';
   
@@ -138,8 +138,8 @@ import i from"fs";import s from"path";import u from"chalk";function p(c){return 
       </div>
     );
   }
-  `,o=s.join(n,"[id]");i.mkdirSync(o,{recursive:!0}),i.writeFileSync(s.join(o,"page.tsx"),t)}generateSchemas(a,n,e){let t=p(a),o=e.map((l,m)=>{let r=l.validations.length>0?`.${l.validations.join(".")}`:"",g=`${l.name}: z.${l.type}()${r}`;return m===0?g:`    ${g}`}).join(`,
-`),d=`
+  `,o=s.join(n,"[id]");i.mkdirSync(o,{recursive:!0}),i.writeFileSync(s.join(o,"page.tsx"),t)}generateSchemas(a,n,e){let t=d(a),o=e.map((l,p)=>{let r=l.validations.length>0?`.${l.validations.join(".")}`:"",g=`${l.name}: z.${l.type}()${r}`;return p===0?g:`    ${g}`}).join(`,
+`),m=`
   import { z } from 'zod';
   
   export const ${t.toLowerCase()}Schema = z.object({
@@ -155,7 +155,7 @@ import i from"fs";import s from"path";import u from"chalk";function p(c){return 
   
   export const delete${t}InputSchema = z.object({ id: z.string() });
   export type Delete${t}InputSchema = z.infer<typeof delete${t}InputSchema>;
-  `;i.writeFileSync(s.join(n,"schemas.ts"),d)}generateActions(a,n){let e=p(a),t=`"use server";
+  `;i.writeFileSync(s.join(n,"schemas.ts"),m)}generateActions(a,n){let e=d(a),t=`"use server";
   
   import {
     Create${e}InputSchema,
@@ -204,5 +204,5 @@ import i from"fs";import s from"path";import u from"chalk";function p(c){return 
     console.log("Listing ${e}s");
     return []
   }
-  `;i.writeFileSync(s.join(n,"actions.ts"),t)}generateModel(){let a=h(this.modelName),n=s.join(process.cwd(),"app",a.toLowerCase());i.mkdirSync(n,{recursive:!0}),this.generateActions(this.modelName,n),this.generateSchemas(this.modelName,n,this.fields),this.generateNewPage(this.modelName,n),this.generateViewPage(this.modelName,n),this.generateListPage(this.modelName,n),this.generateEditPage(this.modelName,n),this.generateFormComponent(this.modelName,n,this.fields),console.log(u.green(`Model ${u.bold(p(this.modelName))} generated successfully at ${u.cyan(`/app/${h(this.modelName.toLowerCase())}`)} \u{1F389}`))}run(){let a=process.argv.slice(2);this.modelName=a[0],this.fields=this.parseArguments(),this.generateModel()}};try{console.log("Running next-generate..."),new $().run()}catch(c){c instanceof Error?console.error(u.red(c.message)):console.error(u.red("An unknown error occurred"))}process.exit(0);
+  `;i.writeFileSync(s.join(n,"actions.ts"),t)}generateModel(){let a=h(this.modelName),n=s.join(process.cwd(),"app",a.toLowerCase());i.mkdirSync(n,{recursive:!0}),this.generateActions(this.modelName,n),this.generateSchemas(this.modelName,n,this.fields),this.generateNewPage(this.modelName,n),this.generateViewPage(this.modelName,n),this.generateListPage(this.modelName,n),this.generateEditPage(this.modelName,n),this.generateFormComponent(this.modelName,n,this.fields),console.log(u.green(`Model ${u.bold(d(this.modelName))} generated successfully at ${u.cyan(`/app/${h(this.modelName.toLowerCase())}`)} \u{1F389}`))}run(){let a=process.argv.slice(2);this.modelName=a[0],this.fields=this.parseArguments(),this.generateModel()}};try{console.log("Running next-generate..."),new $().run()}catch(c){c instanceof Error?console.error(u.red(c.message)):console.error(u.red("An unknown error occurred"))}process.exit(0);
 //# sourceMappingURL=index.js.map
