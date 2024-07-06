@@ -1,6 +1,6 @@
 {
-  "name": "next-generate",
-  "version": "0.0.1",
+  "name": "nextjs-generate",
+  "version": "0.0.1-alpha.1",
   "main": "index.js",
   "type": "module",
   "scripts": {
