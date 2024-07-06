@@ -2,10 +2,11 @@
   import { z } from 'zod';
   
   export const postSchema = z.object({
-    id: z.string().uuid(),
-    title: z.string(),
-    content: z.string(),
-    published: z.boolean()
+    id: z.string().cuid(),
+    title: z.string().max(120),
+    body: z.string(),
+    slug: z.string(),
+    visibility: z.enum([])
   });
   export type PostSchema = z.infer<typeof postSchema>;
   
