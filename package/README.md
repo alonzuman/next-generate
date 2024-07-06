@@ -5,7 +5,7 @@ A powerful CLI tool for generating Next.js components, pages, and CRUD operation
 ## Installation
 
 ```bash
-npm install -D next-generator
+npm install -D nextjs-generate
 ```
 
 ## Usage
