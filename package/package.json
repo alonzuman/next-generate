@@ -8,7 +8,7 @@
     "build": "tsup src/index.ts --minify --dts --format esm --out-dir dist"
   },
   "bin": {
-    "next-generate": "./dist/index.js"
+    "nextjs-generate": "./dist/index.js"
   },
   "keywords": [],
   "author": "",
