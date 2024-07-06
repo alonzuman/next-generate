@@ -1,6 +1,10 @@
-# next-generator
+# Nexjs Generate
 
-A CLI tool for generating Next.js (app dir) components, pages, schemas and actions (CRUD operations) with Zod schema validation.
+A CLI tool for generating Next.js (app dir) components, pages, schemas and actions (CRUD operations) with [Zod](https://zod.dev/) schema validation.
+
+<!-- Say something about how its inspired by ruby on rails scaffolding -->
+
+This project is inspired by the Rails scaffolding feature in Ruby on Rails.
 
 ## Installation
 
@@ -46,7 +50,8 @@ npx next-generate <modelName> "<field1:type1() field2:type2() ...>"
 - [x] Basic CRUD generation
 - [x] Zod schema integration
 - [x] TypeScript support
-- [x] Server actions implementation
+- [x] Server actions
+- [ ] Support optional parameters, in case someone doesn't want to generate schemas, pages, components and actions, but only parts of it.
 - [ ] Integration with popular form libraries (e.g., React Hook Form, Formik etc.) (?)
 - [ ] Integration with popular ORMs (e.g., Prisma, Drizzle, TypeORM etc.)
   - [ ] Support for relationships between models
