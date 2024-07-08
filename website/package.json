@@ -6,11 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "generate": "next-generate"
+    "lint": "next lint"
   },
   "dependencies": {
     "next": "14.2.4",
+    "nextjs-generate": "^0.0.1-alpha.9",
     "react": "^18",
     "react-dom": "^18",
     "zod": "^3.23.8"
